@@ -4,8 +4,9 @@ Gestionnaire de billes
 
 from multiprocessing import Process, Value, Lock
 from random import randint
-from time import sleep
+from time import sleep, time
 from os import getpid
+import sys
 
 
 def travailleur():
@@ -13,15 +14,19 @@ def travailleur():
     Faire un timer, un compteur de demandes aussi
     :return:
     """
-    besoin = randint(1, 10)
+    debut = time()
+    besoin = randint(1, max_ressources)
     identite = getpid()
 
     for i in range(besoin):
-        demander(identite)
-        sleep(randint(2, 10))
-        rendre()
+        demander(besoin, identite)
+        sleep(randint(1, 2))
+        rendre(besoin, identite)
 
-    print(f"Le processus {identite} à fini son travail")
+    fin = time()
+    print(f"{identite} à fini son travail en {fin - debut} secondes")
+    sys.exit(0)
+
 
 def controleur():
 
@@ -38,28 +43,46 @@ def demander(nombre, identite):
     :param nombre:
     :return:
     """
+    print(f"{identite} demande {nombre} ressource(s) | Il y'en a {ressources.value}")
 
-    #Mettre un while
+    showmessage = True
+
+    while nombre > ressources.value:
+
+        if showmessage:
+            print(f"Demande de {identite} refusée")
+            showmessage = False
+        """
+        Le nombre de ressources n'est pas suffisant, alors le processus va attendre en boucle
+        """
+        continue
+
     if nombre <= ressources.value:
+        mutex.acquire(1) #mutex=0
         ressources.value -= nombre
+        mutex.release()
 
-    else:
-        print("Pas assez de ressources")
+        print(f"{identite} a pris {nombre} ressource(s) | Il en reste {ressources.value}")
 
 
 def rendre(nombre, identite):
-    pass
+
+    mutex.acquire(1)
+    ressources.value += nombre
+    mutex.release()
+
+    print(f"{identite} dépose {nombre} ressource(s) | Il y'en a {ressources.value} maintenant")
 
 
 if __name__ == '__main__':
-    n = 4
+    mutex = Lock()
+    n = 3
     max_ressources = 8
     ressources = Value('i', max_ressources)
 
 
     #Creation des processus
+    processus = [Process(target=travailleur) for i in range(n)]
 
-    for i in range(n):
-        processus = [Process(target=travailleur) for i in range(n)]
-
-    print(processus)
+    for process in processus: process.start()
+    for process in processus: process.join()

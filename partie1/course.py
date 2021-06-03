@@ -92,6 +92,8 @@ def un_cheval(ma_ligne : int) : # ma_ligne commence à 0
         mutex.release()
         time.sleep(0.1 * random.randint(1,8))
 
+    sys.exit(0)
+
 def arbitre():
     """
     Le processus arbitre récupère à chaque
@@ -160,3 +162,5 @@ if __name__ == "__main__" :
     curseur_visible()
     print("Fini")
 
+
+    sys.exit(0)
