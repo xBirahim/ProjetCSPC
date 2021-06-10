@@ -2,7 +2,7 @@
 Gestionnaire de billes
 """
 
-from multiprocessing import Process, Value, Lock, Semaphore
+from multiprocessing import Process, Value, Lock, current_process
 from random import randint
 from time import sleep, time
 from os import getpid
@@ -15,8 +15,8 @@ def travailleur():
     :return:
     """
     debut = time()
-    besoin = 6 #randint(1, max_ressources)
-    identite = getpid()
+    besoin = randint(1, max_ressources)
+    identite = current_process().name  #getpid()
 
     for i in range(besoin):
         demander(besoin, identite)
@@ -24,7 +24,7 @@ def travailleur():
         rendre(besoin, identite)
 
     fin = time()
-    print(f"{identite} HAVE FINISHED IN {fin - debut} s")
+    print(f"{identite} HAVE FINISHED IN {int(fin - debut)} s")
     sys.exit(0)
 
 
@@ -56,13 +56,13 @@ def demander(nombre, identite):
             if nombre <= ressources.value:
                 loop = False
                 print(f"{identite} finished waiting")
-                print(f"{identite} | {nombre} / {ressources.value}")
-                print(f"{identite} : Mutex Lock")
+                print(f"\t{identite} | {nombre} / {ressources.value}")
+                print(f"\t{identite} : Mutex Lock")
                 ressources.value -= nombre
 
-                print(f"{identite} <= {nombre} | {ressources.value}")
+                print(f"\t{identite} <= {nombre} | {ressources.value}")
 
-                print(f"{identite} : Mutex release")
+                print(f"\t{identite} : Mutex release\n")
 
 
 def rendre(nombre, identite):
@@ -79,12 +79,12 @@ def rendre(nombre, identite):
 if __name__ == '__main__':
  
     mutex = Lock()
-    n = 5
-    max_ressources = 10
+    n = 3
+    max_ressources = 15
     ressources = Value('i', max_ressources)
 
+    # Creation des processus
 
-    #Creation des processus
     processus = [Process(target=travailleur) for i in range(n)]
 
     for process in processus:
