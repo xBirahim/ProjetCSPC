@@ -15,7 +15,7 @@ def travailleur():
     :return:
     """
     debut = time()
-    besoin = randint(1, 4)
+    besoin = 6 #randint(1, max_ressources)
     identite = getpid()
 
     for i in range(besoin):
@@ -24,16 +24,17 @@ def travailleur():
         rendre(besoin, identite)
 
     fin = time()
-    print(f"{identite} à fini son travail en {fin - debut} secondes")
+    print(f"{identite} HAVE FINISHED IN {fin - debut} s")
     sys.exit(0)
 
 
-def controleur():
+def controleur(nombre):
+    with mutex:
+        if 0 <= ressources.value <= max_ressources:
+            return True
+        else:
+            return False
 
-    if 0 <= ressources.value <= max_ressources:
-        return True
-    else:
-        return False
 
 def demander(nombre, identite):
     """
@@ -43,62 +44,50 @@ def demander(nombre, identite):
     :param nombre:
     :return:
     """
-    print(f"debut de demander pour {identite}")
-    print(f"{identite} demande {nombre} ressource(s) | Il y'en a {ressources.value}")
 
-    showmessage = True
+    with mutex:
+        print(f"{identite} wants {nombre} | {ressources.value} left")
 
+    loop = True
 
-    while nombre > ressources.value:
- 
-        if showmessage:
-            print(f"Demande de {identite} refusée")
-            showmessage = False
-        """
-        Le nombre de ressources n'est pas suffisant, alors le processus va attendre en boucle
-        """
+    while loop:
 
-    print(f"fin attente pour {identite}")
+        with mutex:
+            if nombre <= ressources.value:
+                loop = False
+                print(f"{identite} finished waiting")
+                print(f"{identite} | {nombre} / {ressources.value}")
+                print(f"{identite} : Mutex Lock")
+                ressources.value -= nombre
 
+                print(f"{identite} <= {nombre} | {ressources.value}")
 
-    
-
-    if nombre <= ressources.value:
-        print(f"{identite} | {nombre} / {ressources.value}")
-
-        mutex.acquire()
-        print(f"mutex pris par {identite}")
-        ressources.value -= nombre
-
-        print(f"{identite} a pris {nombre} ressource(s) | Il en reste {ressources.value}")
-        mutex.release()
-        print(f"mutex déposé par {identite}")
+                print(f"{identite} : Mutex release")
 
 
 def rendre(nombre, identite):
 
-    print(f"mutex pris par {identite}")
+    print(f"{identite} : Mutex lock")
 
     mutex.acquire()
     ressources.value += nombre
- 
-    print(f"mutex déposé par {identite}")
-
-    print(f"{identite} dépose {nombre} ressource(s) | Il y'en a {ressources.value} maintenant")
+    print(f"{identite} : Mutex release")
+    print(f"{identite} => {nombre} | {ressources.value} now")
     mutex.release()
-
 
 
 if __name__ == '__main__':
  
     mutex = Lock()
-    n = 3
-    max_ressources = 3
+    n = 5
+    max_ressources = 10
     ressources = Value('i', max_ressources)
 
 
     #Creation des processus
     processus = [Process(target=travailleur) for i in range(n)]
 
-    for process in processus: process.start()
-    for process in processus: process.join()
+    for process in processus:
+        process.start()
+    for process in processus:
+        process.join()
